@@ -129,7 +129,7 @@ async function generateUrl() {
   if (!state.storeName || !state.gbpUrl) { alert('店舗名とGBP URLを入力してください'); return; }
   const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, gasUrl: state.gasUrl, questions: state.questions };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
-  const longUrl = window.location.href.split('?')[0] + '?s=' + encoded;
+  const longUrl = window.location.href.split('?')[0] + '?s=' + encodeURIComponent(encoded);
   state.generatedUrl = longUrl;
   state.shortUrl = null;
   state.shortening = true;
