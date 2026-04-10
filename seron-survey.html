@@ -254,7 +254,7 @@ async function submitPreview() {
 }
 
 function renderPreview() {
-  saveFields();
+  if (!state.fromUrl) saveFields();
   const qs = state.questions;
 
   if (state.previewSubmitted) {
@@ -319,6 +319,7 @@ function esc(str) {
       state.gbpUrl = config.gbpUrl || '';
       state.gasUrl = config.gasUrl || '';
       state.questions = config.questions || state.questions;
+      state.fromUrl = true;
       switchTab('preview');
       return;
     } catch(e) {}
