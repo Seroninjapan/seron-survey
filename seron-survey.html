@@ -250,6 +250,8 @@ function renderAdmin() {
 
 function setPreviewAns(id, val) {
   state.previewAnswers[id] = val;
+  window._surveyAnswers = state.previewAnswers;
+  if (window._checkRequired) window._checkRequired();
 }
 
 function copyToClipboard(text) {
@@ -293,32 +295,23 @@ async function submitPreview() {
   state.previewCopiedText = kansouText;
   renderPreview();
 
-  if (gbpUrl) {
-    setTimeout(() => {
-      const a = document.createElement('a');
-      a.href = gbpUrl;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }, 2500);
-  }
+
 }
 
 function renderPreview() {
   if (!state.fromUrl) saveFields();
   const qs = state.questions;
+  window._surveyQuestions = qs;
+  window._surveyAnswers = state.previewAnswers;
 
   if (state.previewSubmitted) {
     document.getElementById('panel-preview').innerHTML = `
       <div class="card done-card">
         <div class="done-icon">✓</div>
         <div class="done-title">Thank you for your feedback!</div>
-        <div class="done-sub">Your review has been copied to the clipboard.<br>Please paste it on the Google Maps review page.</div>
-        ${state.previewCopiedText ? `<div class="copy-preview"><strong style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">Copied text</strong>${esc(state.previewCopiedText)}</div>` : ''}
-        <p style="font-size:12px;color:#aaa">Opening Google review page automatically...</p>
-        <button class="btn btn-sm" onclick="state.previewSubmitted=false;state.previewAnswers={};renderPreview()" style="margin-top:1rem">← Preview again</button>
+        <div class="done-sub">Your review comment has been copied to your clipboard.<br>Please tap the button below and paste it into the review.</div>
+        ${state.previewCopiedText ? `<div class="copy-preview"><strong style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">Copied text (paste this)</strong>${esc(state.previewCopiedText)}</div>` : ''}
+        ${state.gbpUrl ? `<a href="${esc(state.gbpUrl)}" target="_blank" rel="noopener" style="display:block;margin:1rem 0;padding:14px;background:#1a6b4a;color:#fff;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;text-align:center">Write a Review on Google →</a>` : ''}
       </div>
     `;
     return;
@@ -349,10 +342,24 @@ function renderPreview() {
           </select>` : ''}
         </div>
       `).join('')}
-      <button class="btn btn-primary" onclick="submitPreview()" style="width:100%;padding:12px;font-size:14px">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitPreview()" style="width:100%;padding:12px;font-size:14px" disabled>
         Submit & Write a Review
       </button>
-      <p class="submit-note">After submitting, your review comment will be copied automatically and you will be directed to the Google review page.</p>
+      <p class="submit-note">* All required fields must be filled in before submitting.</p>
+      <script>
+        (function() {
+          function checkRequired() {
+            var qs = window._surveyQuestions || [];
+            var answers = window._surveyAnswers || {};
+            var allFilled = qs.filter(function(q){ return q.required; }).every(function(q){
+              return answers[q.id] && String(answers[q.id]).trim() !== '';
+            });
+            var btn = document.getElementById('submit-btn');
+            if (btn) btn.disabled = !allFilled;
+          }
+          window._checkRequired = checkRequired;
+        })();
+      </script>
     </div>
   `;
 }
