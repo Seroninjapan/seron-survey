@@ -254,7 +254,7 @@ async function submitPreview() {
       fetch(gasUrl, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ storeName: storeName, answers: state.previewAnswers, submittedAt: new Date().toISOString() })
+        body: JSON.stringify({ storeName: storeName, answers: state.previewAnswers, questions: state.questions, submittedAt: new Date().toISOString() })
       });
     } catch(e) {}
   }
