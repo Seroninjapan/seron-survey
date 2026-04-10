@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seron アンケートシステム</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+.app { max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
+.logo { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; color: #1a6b4a; margin-bottom: 2rem; }
+.tab-bar { display: flex; border: 1px solid #e0e0da; border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem; background: #eeede8; }
+.tab { flex: 1; padding: 10px 16px; font-size: 13px; background: transparent; color: #888; border: none; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.tab.active { background: #fff; color: #1a1a1a; font-weight: 500; border-radius: 8px; margin: 3px; }
+.card { background: #fff; border: 1px solid #e8e8e2; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+label.field-label { font-size: 12px; color: #888; margin-bottom: 4px; display: block; }
+input[type=text], input[type=url], textarea, select { width: 100%; padding: 9px 11px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; font-family: inherit; outline: none; transition: border 0.15s; }
+input:focus, textarea:focus, select:focus { border-color: #1a6b4a; }
+textarea { resize: vertical; min-height: 64px; }
+.field-wrap { margin-bottom: 14px; }
+.row { display: flex; gap: 8px; align-items: flex-start; }
+.row .field-wrap { flex: 1; margin-bottom: 0; }
+.btn { padding: 9px 18px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.btn:hover { background: #f5f5f3; }
+.btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.btn-primary:hover { background: #333; }
+.btn-primary:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; }
+.btn-danger { color: #c0392b; border-color: #f5c6c6; font-size: 12px; padding: 4px 10px; }
+.btn-danger:hover { background: #fef2f2; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.q-card { background: #f9f9f7; border: 1px solid #e8e8e2; border-radius: 8px; padding: 14px; margin-bottom: 8px; }
+.q-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.q-num { font-size: 11px; color: #aaa; min-width: 22px; }
+.badge-green { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #d4f0e5; color: #1a6b4a; font-weight: 600; }
+.hint { font-size: 11px; color: #aaa; margin-top: 3px; }
+.required-mark { color: #e24b4a; }
+.link-box { background: #f9f9f7; border: 1px solid #e0e0da; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #555; word-break: break-all; font-family: monospace; margin-top: 10px; }
+.success-bar { background: #d4f0e5; border: 1px solid #a8dfc7; color: #1a6b4a; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 1rem; }
+.section-title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 14px; }
+.divider { border: none; border-top: 1px solid #f0f0ea; margin: 1rem 0; }
+.survey-title { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.survey-sub { font-size: 13px; color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
+.ans-label { font-size: 14px; font-weight: 500; margin-bottom: 8px; display: block; line-height: 1.5; }
+.radio-group { display: flex; flex-direction: column; gap: 8px; }
+.radio-opt { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; padding: 8px 12px; border: 1px solid #e8e8e2; border-radius: 8px; background: #fff; transition: all 0.15s; }
+.radio-opt:hover { border-color: #1a6b4a; background: #f0faf6; }
+.radio-opt input { width: auto; accent-color: #1a6b4a; }
+.ans-field { margin-bottom: 1.2rem; }
+.submit-note { font-size: 12px; color: #aaa; margin-top: 8px; line-height: 1.5; }
+.done-card { text-align: center; padding: 3rem 1.5rem; }
+.done-icon { width: 56px; height: 56px; background: #d4f0e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
+.done-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.done-sub { font-size: 13px; color: #888; line-height: 1.6; margin-bottom: 1rem; }
+.copy-preview { background: #f9f9f7; border: 1px solid #e0e0da; border-radius: 8px; padding: 12px; font-size: 13px; color: #555; text-align: left; line-height: 1.6; margin: 1rem 0; }
+.gas-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
+.gas-ok { background: #d4f0e5; color: #1a6b4a; }
+.gas-ng { background: #fef2f2; color: #c0392b; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="logo">SERON</div>
+  <div class="tab-bar">
+    <button class="tab active" id="tab-admin" onclick="switchTab('admin')">管理者 — アンケート作成</button>
+    <button class="tab" id="tab-preview" onclick="switchTab('preview')">モニター画面プレビュー</button>
+  </div>
+  <div id="panel-admin"></div>
+  <div id="panel-preview" style="display:none"></div>
+</div>
+
+<script>
+let state = {
+  storeName: '',
+  gbpUrl: '',
+  gasUrl: '',
+  questions: [
+    { id: 1, label: 'お名前', type: 'text', options: '', isKansou: false, required: true },
+    { id: 2, label: 'ご来店日', type: 'text', options: '', isKansou: false, required: true },
+    { id: 3, label: 'お店への感想をご記入ください。', type: 'textarea', options: '', isKansou: true, required: true },
+  ],
+  nextId: 4,
+  generatedUrl: '',
+  copied: false,
+  previewAnswers: {},
+  previewSubmitted: false,
+  previewCopiedText: '',
+};
+
+function switchTab(tab) {
+  document.getElementById('tab-admin').className = 'tab' + (tab==='admin'?' active':'');
+  document.getElementById('tab-preview').className = 'tab' + (tab==='preview'?' active':'');
+  document.getElementById('panel-admin').style.display = tab==='admin'?'':'none';
+  document.getElementById('panel-preview').style.display = tab==='preview'?'':'none';
+  if(tab==='preview') renderPreview();
+}
+
+function val(id) { return document.getElementById(id)?.value || ''; }
+
+function saveFields() {
+  state.storeName = val('f-storeName');
+  state.gbpUrl = val('f-gbpUrl');
+  state.gasUrl = val('f-gasUrl');
+  state.questions.forEach(q => {
+    q.label = val('q-label-'+q.id) || q.label;
+    q.type = val('q-type-'+q.id) || q.type;
+    q.options = val('q-options-'+q.id) || q.options;
+    q.isKansou = document.getElementById('q-kansou-'+q.id)?.checked || false;
+    q.required = document.getElementById('q-req-'+q.id)?.checked || false;
+  });
+  // ensure only one isKansou
+  let found = false;
+  state.questions.forEach(q => { if(q.isKansou) { if(found) q.isKansou=false; else found=true; } });
+}
+
+function addQuestion() {
+  saveFields();
+  state.questions.push({ id: state.nextId++, label: '', type: 'text', options: '', isKansou: false, required: false });
+  renderAdmin();
+}
+
+function removeQuestion(id) {
+  saveFields();
+  state.questions = state.questions.filter(q => q.id !== id);
+  renderAdmin();
+}
+
+function generateUrl() {
+  saveFields();
+  const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, gasUrl: state.gasUrl, questions: state.questions };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+  state.generatedUrl = window.location.href.split('?')[0] + '?s=' + encoded;
+  renderAdmin();
+}
+
+function copyUrl() {
+  navigator.clipboard.writeText(state.generatedUrl).then(() => {
+    state.copied = true;
+    renderAdmin();
+    setTimeout(() => { state.copied = false; renderAdmin(); }, 2000);
+  });
+}
+
+function renderAdmin() {
+  const qs = state.questions;
+  document.getElementById('panel-admin').innerHTML = `
+    <div class="card">
+      <div class="section-title">案件・店舗情報</div>
+      <div class="field-wrap">
+        <label class="field-label">店舗名 <span class="required-mark">*</span></label>
+        <input id="f-storeName" type="text" placeholder="例: 焼肉レストランABC" value="${esc(state.storeName)}">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">GBP レビューページURL <span class="required-mark">*</span></label>
+        <input id="f-gbpUrl" type="url" placeholder="https://g.page/r/..." value="${esc(state.gbpUrl)}">
+        <p class="hint">Googleマップ「レビューを書く」のリンクを貼り付けてください</p>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Google Apps Script URL <span class="required-mark">*</span></label>
+        <input id="f-gasUrl" type="url" placeholder="https://script.google.com/macros/s/..." value="${esc(state.gasUrl)}">
+        <p class="hint">スプレッドシートに回答を保存するためのURL</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">設問リスト</div>
+      ${qs.map((q,i) => `
+        <div class="q-card">
+          <div class="q-header">
+            <span class="q-num">Q${i+1}</span>
+            ${q.isKansou ? '<span class="badge-green">感想欄 → GBPコピー</span>' : ''}
+            <div style="flex:1"></div>
+            <button class="btn btn-danger" onclick="removeQuestion(${q.id})">削除</button>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <div class="field-wrap">
+              <label class="field-label">設問テキスト</label>
+              <input id="q-label-${q.id}" type="text" placeholder="例: 気に入ったメニューは何でしたか？" value="${esc(q.label)}">
+            </div>
+            <div style="min-width:130px">
+              <label class="field-label">形式</label>
+              <select id="q-type-${q.id}" onchange="saveFields();renderAdmin()">
+                <option value="text" ${q.type==='text'?'selected':''}>テキスト入力</option>
+                <option value="textarea" ${q.type==='textarea'?'selected':''}>長文テキスト</option>
+                <option value="radio" ${q.type==='radio'?'selected':''}>単一選択</option>
+                <option value="select" ${q.type==='select'?'selected':''}>プルダウン</option>
+              </select>
+            </div>
+          </div>
+          ${(q.type==='radio'||q.type==='select') ? `
+            <div class="field-wrap">
+              <label class="field-label">選択肢（改行区切り）</label>
+              <textarea id="q-options-${q.id}" placeholder="とても良かった\n良かった\n普通\n悪かった">${esc(q.options)}</textarea>
+            </div>
+          ` : `<input type="hidden" id="q-options-${q.id}" value="${esc(q.options)}">`}
+          <div style="display:flex;gap:20px;align-items:center;margin-top:6px;font-size:13px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="q-req-${q.id}" ${q.required?'checked':''} style="width:auto;accent-color:#1a6b4a"> 必須
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="q-kansou-${q.id}" ${q.isKansou?'checked':''} style="width:auto;accent-color:#1a6b4a"> この回答をGBPにコピーする（感想欄）
+            </label>
+          </div>
+        </div>
+      `).join('')}
+      <button class="btn btn-sm" onclick="addQuestion()" style="margin-top:6px">＋ 設問を追加</button>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+      <button class="btn" onclick="saveFields();switchTab('preview')">プレビュー →</button>
+      <button class="btn btn-primary" onclick="generateUrl()" ${(!state.storeName&&!val('f-storeName'))||(!state.gbpUrl&&!val('f-gbpUrl'))?'disabled':''}>共有リンクを生成</button>
+    </div>
+
+    ${state.generatedUrl ? `
+      <div class="link-box">${esc(state.generatedUrl)}</div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="btn btn-sm" onclick="copyUrl()">${state.copied ? '✓ コピーしました' : 'リンクをコピー'}</button>
+        <span class="hint">このリンクをLINEでモニターに送付してください</span>
+      </div>
+    ` : ''}
+  `;
+}
+
+function setPreviewAns(id, val) {
+  state.previewAnswers[id] = val;
+}
+
+async function submitPreview() {
+  saveFields();
+  const kansouQ = state.questions.find(q => q.isKansou);
+  const kansouText = kansouQ ? (state.previewAnswers[kansouQ.id] || '') : '';
+
+  if (state.gasUrl) {
+    try {
+      fetch(state.gasUrl, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeName: state.storeName, answers: state.previewAnswers, submittedAt: new Date().toISOString() })
+      });
+    } catch(e) {}
+  }
+
+  if (kansouText) {
+    try { await navigator.clipboard.writeText(kansouText); } catch(e) {}
+  }
+
+  state.previewSubmitted = true;
+  state.previewCopiedText = kansouText;
+  renderPreview();
+
+  if (state.gbpUrl) {
+    setTimeout(() => { window.open(state.gbpUrl, '_blank'); }, 2000);
+  }
+}
+
+function renderPreview() {
+  saveFields();
+  const qs = state.questions;
+
+  if (state.previewSubmitted) {
+    document.getElementById('panel-preview').innerHTML = `
+      <div class="card done-card">
+        <div class="done-icon">✓</div>
+        <div class="done-title">回答ありがとうございました！</div>
+        <div class="done-sub">感想欄の内容がクリップボードにコピーされました。<br>このままGoogleマップのレビュー画面に貼り付けてください。</div>
+        ${state.previewCopiedText ? `<div class="copy-preview"><strong style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">コピーされた内容</strong>${esc(state.previewCopiedText)}</div>` : ''}
+        <p style="font-size:12px;color:#aaa">Googleレビュー画面を自動で開いています...</p>
+        <button class="btn btn-sm" onclick="state.previewSubmitted=false;state.previewAnswers={};renderPreview()" style="margin-top:1rem">← もう一度プレビュー</button>
+      </div>
+    `;
+    return;
+  }
+
+  const allRequired = qs.filter(q => q.required).every(q => state.previewAnswers[q.id]);
+
+  document.getElementById('panel-preview').innerHTML = `
+    <div class="card">
+      <div class="survey-title">${esc(state.storeName) || '（店舗名未設定）'}</div>
+      <div class="survey-sub">ご来店いただきありがとうございます。<br>以下のアンケートにご回答ください。</div>
+      <hr class="divider">
+      ${qs.map((q,i) => `
+        <div class="ans-field">
+          <label class="ans-label">
+            Q${i+1}. ${esc(q.label)}${q.required?'<span class="required-mark"> *</span>':''}
+            ${q.isKansou?'<span class="badge-green" style="margin-left:8px;font-size:10px">感想欄</span>':''}
+          </label>
+          ${q.type==='text' ? `<input type="text" value="${esc(state.previewAnswers[q.id]||'')}" oninput="setPreviewAns(${q.id}, this.value)">` : ''}
+          ${q.type==='textarea' ? `<textarea oninput="setPreviewAns(${q.id}, this.value)" style="min-height:100px">${esc(state.previewAnswers[q.id]||'')}</textarea>` : ''}
+          ${q.type==='radio' ? `<div class="radio-group">${(q.options||'').split('\n').filter(Boolean).map(opt=>`
+            <label class="radio-opt">
+              <input type="radio" name="q${q.id}" value="${esc(opt)}" ${state.previewAnswers[q.id]===opt?'checked':''} onchange="setPreviewAns(${q.id},'${esc(opt)}')">
+              ${esc(opt)}
+            </label>`).join('')}</div>` : ''}
+          ${q.type==='select' ? `<select onchange="setPreviewAns(${q.id}, this.value)">
+            <option value="">選択してください</option>
+            ${(q.options||'').split('\n').filter(Boolean).map(opt=>`<option value="${esc(opt)}" ${state.previewAnswers[q.id]===opt?'selected':''}>${esc(opt)}</option>`).join('')}
+          </select>` : ''}
+        </div>
+      `).join('')}
+      <button class="btn btn-primary" onclick="submitPreview()" ${!allRequired?'disabled':''} style="width:100%;padding:12px;font-size:14px">
+        送信してレビューを書く
+      </button>
+      <p class="submit-note">送信後、感想欄の内容が自動でコピーされ、Googleレビュー画面に移動します。</p>
+    </div>
+  `;
+}
+
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Check for ?s= param on load
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const s = params.get('s');
+  if (s) {
+    try {
+      const config = JSON.parse(decodeURIComponent(escape(atob(s))));
+      state.storeName = config.storeName || '';
+      state.gbpUrl = config.gbpUrl || '';
+      state.gasUrl = config.gasUrl || '';
+      state.questions = config.questions || state.questions;
+      switchTab('preview');
+      return;
+    } catch(e) {}
+  }
+  renderAdmin();
+})();
+</script>
+</body>
+</html>
