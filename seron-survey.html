@@ -337,6 +337,7 @@ function esc(str) {
       state.gasUrl = config.gasUrl || '';
       state.questions = config.questions || state.questions;
       state.fromUrl = true;
+      document.querySelector('.tab-bar').style.display = 'none';
       switchTab('preview');
       return;
     } catch(e) {}
