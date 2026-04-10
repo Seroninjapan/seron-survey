@@ -124,21 +124,31 @@ function removeQuestion(id) {
   renderAdmin();
 }
 
-function generateUrl() {
+async function generateUrl() {
   saveFields();
   if (!state.storeName || !state.gbpUrl) { alert('店舗名とGBP URLを入力してください'); return; }
   const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, gasUrl: state.gasUrl, questions: state.questions };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
-  state.generatedUrl = window.location.href.split('?')[0] + '?s=' + encoded;
+  const longUrl = window.location.href.split('?')[0] + '?s=' + encoded;
+  state.generatedUrl = longUrl;
+  state.shortUrl = null;
+  state.shortening = true;
+  renderAdmin();
+  try {
+    const res = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longUrl));
+    if (res.ok) {
+      const short = await res.text();
+      if (short.startsWith('https://is.gd/') || short.startsWith('http://is.gd/')) {
+        state.shortUrl = short.trim();
+      }
+    }
+  } catch(e) {}
+  state.shortening = false;
   renderAdmin();
 }
 
-function openTinyUrl() {
-  window.open('https://tinyurl.com/create.php?url=' + encodeURIComponent(state.generatedUrl), '_blank');
-}
-
 function copyUrl() {
-  copyToClipboard(state.generatedUrl);
+  copyToClipboard(state.shortUrl || state.generatedUrl);
   state.copied = true;
   renderAdmin();
   setTimeout(() => { state.copied = false; renderAdmin(); }, 2000);
@@ -215,15 +225,25 @@ function renderAdmin() {
     </div>
 
     ${state.generatedUrl ? `
-      <div style="margin-top:12px">
-        <div style="font-size:11px;color:#aaa;margin-bottom:4px">生成されたURL</div>
-        <div class="link-box">${esc(state.generatedUrl)}</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-sm" onclick="copyUrl()">${state.copied ? '✓ コピーしました' : 'URLをコピー'}</button>
-        <button class="btn btn-sm" onclick="openTinyUrl()" style="background:#1a6b4a;color:#fff;border-color:#1a6b4a">短縮URLを作成 →</button>
-      </div>
-      <p class="hint" style="margin-top:6px">「短縮URLを作成」を押すとTinyURLが開きます。そこで短縮URLを取得してLINEに貼り付けてください。</p>
+      ${state.shortening ? '<p style="font-size:13px;color:#1a6b4a;margin-top:12px">短縮URL生成中...</p>' : ''}
+      ${!state.shortening && state.shortUrl ? `
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:#1a6b4a;font-weight:600;margin-bottom:4px">短縮URL（LINEで送付）</div>
+          <div class="link-box" style="font-size:15px;font-weight:600;color:#1a1a1a">${esc(state.shortUrl)}</div>
+        </div>
+      ` : ''}
+      ${!state.shortening && !state.shortUrl ? `
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:#aaa;margin-bottom:4px">URL（短縮に失敗しました）</div>
+          <div class="link-box">${esc(state.generatedUrl)}</div>
+        </div>
+      ` : ''}
+      ${!state.shortening ? `
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <button class="btn btn-sm" onclick="copyUrl()">${state.copied ? '✓ コピーしました' : (state.shortUrl ? '短縮URLをコピー' : 'URLをコピー')}</button>
+          <span class="hint">このリンクをLINEでモニターに送付してください</span>
+        </div>
+      ` : ''}
     ` : ''}
   `;
 }
