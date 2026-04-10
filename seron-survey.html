@@ -249,7 +249,7 @@ async function submitPreview() {
   renderPreview();
 
   if (state.gbpUrl) {
-    setTimeout(() => { window.open(state.gbpUrl, '_blank'); }, 2000);
+    setTimeout(() => { window.location.href = state.gbpUrl; }, 2000);
   }
 }
 
