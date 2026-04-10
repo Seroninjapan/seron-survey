@@ -250,8 +250,18 @@ function renderAdmin() {
 
 function setPreviewAns(id, val) {
   state.previewAnswers[id] = val;
-  window._surveyAnswers = state.previewAnswers;
-  if (window._checkRequired) window._checkRequired();
+  checkAndUpdateSubmitBtn();
+}
+
+function checkAndUpdateSubmitBtn() {
+  var btn = document.getElementById('submit-btn');
+  if (!btn) return;
+  var qs = state.questions || [];
+  var answers = state.previewAnswers || {};
+  var allFilled = qs.filter(function(q){ return q.required; }).every(function(q){
+    return answers[q.id] && String(answers[q.id]).trim() !== '';
+  });
+  btn.disabled = !allFilled;
 }
 
 function copyToClipboard(text) {
@@ -301,8 +311,7 @@ async function submitPreview() {
 function renderPreview() {
   if (!state.fromUrl) saveFields();
   const qs = state.questions;
-  window._surveyQuestions = qs;
-  window._surveyAnswers = state.previewAnswers;
+
 
   if (state.previewSubmitted) {
     document.getElementById('panel-preview').innerHTML = `
@@ -346,22 +355,9 @@ function renderPreview() {
         Submit & Write a Review
       </button>
       <p class="submit-note">* All required fields must be filled in before submitting.</p>
-      <script>
-        (function() {
-          function checkRequired() {
-            var qs = window._surveyQuestions || [];
-            var answers = window._surveyAnswers || {};
-            var allFilled = qs.filter(function(q){ return q.required; }).every(function(q){
-              return answers[q.id] && String(answers[q.id]).trim() !== '';
-            });
-            var btn = document.getElementById('submit-btn');
-            if (btn) btn.disabled = !allFilled;
-          }
-          window._checkRequired = checkRequired;
-        })();
-      </script>
     </div>
   `;
+  checkAndUpdateSubmitBtn();
 }
 
 function esc(str) {
