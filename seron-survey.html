@@ -126,6 +126,7 @@ function removeQuestion(id) {
 
 function generateUrl() {
   saveFields();
+  if (!state.storeName || !state.gbpUrl) { alert('店舗名とGBP URLを入力してください'); return; }
   const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, gasUrl: state.gasUrl, questions: state.questions };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
   state.generatedUrl = window.location.href.split('?')[0] + '?s=' + encoded;
@@ -207,7 +208,7 @@ function renderAdmin() {
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
       <button class="btn" onclick="saveFields();switchTab('preview')">プレビュー →</button>
-      <button class="btn btn-primary" onclick="generateUrl()" ${(!state.storeName&&!val('f-storeName'))||(!state.gbpUrl&&!val('f-gbpUrl'))?'disabled':''}>共有リンクを生成</button>
+      <button class="btn btn-primary" onclick="generateUrl()">共有リンクを生成</button>
     </div>
 
     ${state.generatedUrl ? `
@@ -260,11 +261,11 @@ function renderPreview() {
     document.getElementById('panel-preview').innerHTML = `
       <div class="card done-card">
         <div class="done-icon">✓</div>
-        <div class="done-title">回答ありがとうございました！</div>
-        <div class="done-sub">感想欄の内容がクリップボードにコピーされました。<br>このままGoogleマップのレビュー画面に貼り付けてください。</div>
-        ${state.previewCopiedText ? `<div class="copy-preview"><strong style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">コピーされた内容</strong>${esc(state.previewCopiedText)}</div>` : ''}
-        <p style="font-size:12px;color:#aaa">Googleレビュー画面を自動で開いています...</p>
-        <button class="btn btn-sm" onclick="state.previewSubmitted=false;state.previewAnswers={};renderPreview()" style="margin-top:1rem">← もう一度プレビュー</button>
+        <div class="done-title">Thank you for your feedback!</div>
+        <div class="done-sub">Your review has been copied to the clipboard.<br>Please paste it on the Google Maps review page.</div>
+        ${state.previewCopiedText ? `<div class="copy-preview"><strong style="font-size:11px;color:#aaa;display:block;margin-bottom:4px">Copied text</strong>${esc(state.previewCopiedText)}</div>` : ''}
+        <p style="font-size:12px;color:#aaa">Opening Google review page automatically...</p>
+        <button class="btn btn-sm" onclick="state.previewSubmitted=false;state.previewAnswers={};renderPreview()" style="margin-top:1rem">← Preview again</button>
       </div>
     `;
     return;
@@ -275,13 +276,12 @@ function renderPreview() {
   document.getElementById('panel-preview').innerHTML = `
     <div class="card">
       <div class="survey-title">${esc(state.storeName) || '（店舗名未設定）'}</div>
-      <div class="survey-sub">ご来店いただきありがとうございます。<br>以下のアンケートにご回答ください。</div>
+      <div class="survey-sub">Thank you for visiting us!<br>Please take a moment to fill out this short survey.</div>
       <hr class="divider">
       ${qs.map((q,i) => `
         <div class="ans-field">
           <label class="ans-label">
-            Q${i+1}. ${esc(q.label)}${q.required?'<span class="required-mark"> *</span>':''}
-            ${q.isKansou?'<span class="badge-green" style="margin-left:8px;font-size:10px">感想欄</span>':''}
+            ${i+1}. ${esc(q.label)}${q.required?'<span class="required-mark"> *</span>':''}
           </label>
           ${q.type==='text' ? `<input type="text" value="${esc(state.previewAnswers[q.id]||'')}" oninput="setPreviewAns(${q.id}, this.value)">` : ''}
           ${q.type==='textarea' ? `<textarea oninput="setPreviewAns(${q.id}, this.value)" style="min-height:100px">${esc(state.previewAnswers[q.id]||'')}</textarea>` : ''}
@@ -291,15 +291,15 @@ function renderPreview() {
               ${esc(opt)}
             </label>`).join('')}</div>` : ''}
           ${q.type==='select' ? `<select onchange="setPreviewAns(${q.id}, this.value)">
-            <option value="">選択してください</option>
+            <option value="">Please select</option>
             ${(q.options||'').split('\n').filter(Boolean).map(opt=>`<option value="${esc(opt)}" ${state.previewAnswers[q.id]===opt?'selected':''}>${esc(opt)}</option>`).join('')}
           </select>` : ''}
         </div>
       `).join('')}
       <button class="btn btn-primary" onclick="submitPreview()" ${!allRequired?'disabled':''} style="width:100%;padding:12px;font-size:14px">
-        送信してレビューを書く
+        Submit & Write a Review
       </button>
-      <p class="submit-note">送信後、感想欄の内容が自動でコピーされ、Googleレビュー画面に移動します。</p>
+      <p class="submit-note">After submitting, your review comment will be copied automatically and you will be directed to the Google review page.</p>
     </div>
   `;
 }
