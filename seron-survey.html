@@ -135,11 +135,11 @@ async function generateUrl() {
   state.shortening = true;
   renderAdmin();
   try {
-    const res = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longUrl));
+    const res = await fetch('https://api.shrtco.de/v2/shorten?url=' + encodeURIComponent(longUrl));
     if (res.ok) {
-      const short = await res.text();
-      if (short.startsWith('https://is.gd/') || short.startsWith('http://is.gd/')) {
-        state.shortUrl = short.trim();
+      const json = await res.json();
+      if (json.ok && json.result && json.result.full_short_link) {
+        state.shortUrl = json.result.full_short_link;
       }
     }
   } catch(e) {}
