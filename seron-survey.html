@@ -74,13 +74,12 @@ let state = {
   gbpUrl: '',
   gasUrl: '',
   questions: [
-    { id: 1, label: 'お名前', type: 'text', options: '', isKansou: false, required: true },
-    { id: 2, label: 'ご来店日', type: 'text', options: '', isKansou: false, required: true },
-    { id: 3, label: 'お店への感想をご記入ください。', type: 'textarea', options: '', isKansou: true, required: true },
+    { id: 1, label: 'お店への感想をご記入ください。', type: 'textarea', options: '', isKansou: true, required: true },
   ],
-  nextId: 4,
+  nextId: 2,
   generatedUrl: '',
   copied: false,
+  fixedAnswers: { name: '', date: '', gender: '' },
   previewAnswers: {},
   previewSubmitted: false,
   previewCopiedText: '',
@@ -131,6 +130,7 @@ async function generateUrl() {
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
   const longUrl = window.location.href.split('?')[0] + '?s=' + encodeURIComponent(encoded);
   state.generatedUrl = longUrl;
+  if (state.gasUrl) localStorage.setItem('seron_gas_url', state.gasUrl);
   state.shortUrl = null;
   state.shortening = true;
   renderAdmin();
@@ -168,15 +168,23 @@ function renderAdmin() {
         <input id="f-gbpUrl" type="url" placeholder="https://g.page/r/..." value="${esc(state.gbpUrl)}">
         <p class="hint">Googleマップ「レビューを書く」のリンクを貼り付けてください</p>
       </div>
-      <div class="field-wrap">
-        <label class="field-label">Google Apps Script URL <span class="required-mark">*</span></label>
-        <input id="f-gasUrl" type="url" placeholder="https://script.google.com/macros/s/..." value="${esc(state.gasUrl)}">
-        <p class="hint">スプレッドシートに回答を保存するためのURL</p>
+      <div class="field-wrap" style="display:none">
+        <input id="f-gasUrl" type="url" value="${esc(state.gasUrl)}">
       </div>
     </div>
 
     <div class="card">
-      <div class="section-title">設問リスト</div>
+      <div class="section-title">固定フィールド（全案件共通）</div>
+      <p style="font-size:12px;color:#aaa;margin-bottom:12px">以下は全てのアンケートに自動で含まれます。設問リストに追加不要です。</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <div style="padding:6px 12px;background:#d4f0e5;border-radius:6px;font-size:12px;color:#1a6b4a;font-weight:500">お名前 *</div>
+        <div style="padding:6px 12px;background:#d4f0e5;border-radius:6px;font-size:12px;color:#1a6b4a;font-weight:500">来店日 *</div>
+        <div style="padding:6px 12px;background:#d4f0e5;border-radius:6px;font-size:12px;color:#1a6b4a;font-weight:500">性別 *</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">設問リスト（案件ごとにカスタム）</div>
       ${qs.map((q,i) => `
         <div class="q-card">
           <div class="q-header">
@@ -248,6 +256,11 @@ function renderAdmin() {
   `;
 }
 
+function setFixedAns(key, val) {
+  state.fixedAnswers[key] = val;
+  checkAndUpdateSubmitBtn();
+}
+
 function setPreviewAns(id, val) {
   state.previewAnswers[id] = val;
   checkAndUpdateSubmitBtn();
@@ -258,7 +271,9 @@ function checkAndUpdateSubmitBtn() {
   if (!btn) return;
   var qs = state.questions || [];
   var answers = state.previewAnswers || {};
-  var allFilled = qs.filter(function(q){ return q.required; }).every(function(q){
+  var fixed = state.fixedAnswers || {};
+  var fixedOk = fixed.name && fixed.name.trim() && fixed.date && fixed.date.trim() && fixed.gender && fixed.gender.trim();
+  var allFilled = fixedOk && qs.filter(function(q){ return q.required; }).every(function(q){
     return answers[q.id] && String(answers[q.id]).trim() !== '';
   });
   btn.disabled = !allFilled;
@@ -294,7 +309,7 @@ async function submitPreview() {
       fetch(gasUrl, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ storeName: storeName, answers: state.previewAnswers, questions: state.questions, submittedAt: new Date().toISOString() })
+        body: JSON.stringify({ storeName: storeName, fixedAnswers: state.fixedAnswers, answers: state.previewAnswers, questions: state.questions, submittedAt: new Date().toISOString() })
       });
     } catch(e) {}
   }
@@ -333,10 +348,30 @@ function renderPreview() {
       <div class="survey-title">${esc(state.storeName) || '（店舗名未設定）'}</div>
       <div class="survey-sub">Thank you for visiting us!<br>Please take a moment to fill out this short survey.</div>
       <hr class="divider">
+
+      <div class="ans-field">
+        <label class="ans-label">1. Name <span class="required-mark">*</span></label>
+        <input type="text" id="fixed-name" oninput="setFixedAns('name', this.value)" value="${esc(state.fixedAnswers && state.fixedAnswers.name || '')}">
+      </div>
+      <div class="ans-field">
+        <label class="ans-label">2. Date of Visit <span class="required-mark">*</span></label>
+        <input type="date" id="fixed-date" oninput="setFixedAns('date', this.value)" value="${esc(state.fixedAnswers && state.fixedAnswers.date || '')}">
+      </div>
+      <div class="ans-field">
+        <label class="ans-label">3. Gender <span class="required-mark">*</span></label>
+        <select id="fixed-gender" onchange="setFixedAns('gender', this.value)">
+          <option value="">Please select</option>
+          <option value="Male" ${state.fixedAnswers && state.fixedAnswers.gender === 'Male' ? 'selected' : ''}>Male</option>
+          <option value="Female" ${state.fixedAnswers && state.fixedAnswers.gender === 'Female' ? 'selected' : ''}>Female</option>
+          <option value="Prefer not to say" ${state.fixedAnswers && state.fixedAnswers.gender === 'Prefer not to say' ? 'selected' : ''}>Prefer not to say</option>
+        </select>
+      </div>
+      <hr class="divider">
+
       ${qs.map((q,i) => `
         <div class="ans-field">
           <label class="ans-label">
-            ${i+1}. ${esc(q.label)}${q.required?'<span class="required-mark"> *</span>':''}
+            ${i+4}. ${esc(q.label)}${q.required?'<span class="required-mark"> *</span>':''}
           </label>
           ${q.type==='text' ? `<input type="text" value="${esc(state.previewAnswers[q.id]||'')}" oninput="setPreviewAns(${q.id}, this.value)">` : ''}
           ${q.type==='textarea' ? `<textarea oninput="setPreviewAns(${q.id}, this.value)" style="min-height:100px">${esc(state.previewAnswers[q.id]||'')}</textarea>` : ''}
@@ -363,6 +398,12 @@ function renderPreview() {
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+// Load GAS URL from localStorage
+(function(){
+  const savedGas = localStorage.getItem('seron_gas_url');
+  if (savedGas) state.gasUrl = savedGas;
+})();
 
 // Check for ?s= param on load
 (function(){
