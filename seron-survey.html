@@ -69,6 +69,8 @@ textarea { resize: vertical; min-height: 64px; }
 </div>
 
 <script>
+const ADMIN_PASSWORD = 'seron2026';
+
 let state = {
   storeName: '',
   gbpUrl: '',
@@ -77,6 +79,7 @@ let state = {
     { id: 1, label: 'お店への感想をご記入ください。', type: 'textarea', options: '', isKansou: true, required: true },
   ],
   nextId: 2,
+  adminUnlocked: false,
   generatedUrl: '',
   copied: false,
   fixedAnswers: { name: '', date: '', gender: '' },
@@ -86,11 +89,49 @@ let state = {
 };
 
 function switchTab(tab) {
+  if (tab === 'admin' && !state.adminUnlocked) {
+    renderPasswordPrompt();
+    return;
+  }
   document.getElementById('tab-admin').className = 'tab' + (tab==='admin'?' active':'');
   document.getElementById('tab-preview').className = 'tab' + (tab==='preview'?' active':'');
   document.getElementById('panel-admin').style.display = tab==='admin'?'':'none';
   document.getElementById('panel-preview').style.display = tab==='preview'?'':'none';
   if(tab==='preview') renderPreview();
+}
+
+function renderPasswordPrompt() {
+  document.getElementById('tab-admin').className = 'tab active';
+  document.getElementById('tab-preview').className = 'tab';
+  document.getElementById('panel-preview').style.display = 'none';
+  document.getElementById('panel-admin').style.display = '';
+  document.getElementById('panel-admin').innerHTML = `
+    <div class="card" style="max-width:400px;margin:2rem auto;text-align:center;padding:2rem">
+      <div style="font-size:24px;margin-bottom:12px">🔒</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px">管理者パスワード</div>
+      <div style="font-size:13px;color:#888;margin-bottom:16px">管理者画面にアクセスするにはパスワードが必要です。</div>
+      <input type="password" id="pw-input" placeholder="パスワードを入力" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:8px;text-align:center" onkeydown="if(event.key==='Enter')checkPassword()">
+      <button class="btn btn-primary" onclick="checkPassword()" style="width:100%;padding:10px;margin-top:4px">ログイン</button>
+      <p id="pw-error" style="color:#e24b4a;font-size:12px;margin-top:8px;display:none">パスワードが違います</p>
+    </div>
+  `;
+  setTimeout(() => {
+    const input = document.getElementById('pw-input');
+    if (input) input.focus();
+  }, 50);
+}
+
+function checkPassword() {
+  const input = document.getElementById('pw-input');
+  if (!input) return;
+  if (input.value === ADMIN_PASSWORD) {
+    state.adminUnlocked = true;
+    renderAdmin();
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    input.value = '';
+    input.focus();
+  }
 }
 
 function val(id) { return document.getElementById(id)?.value || ''; }
@@ -422,7 +463,7 @@ function esc(str) {
       return;
     } catch(e) {}
   }
-  renderAdmin();
+  renderPasswordPrompt();
 })();
 </script>
 </body>
