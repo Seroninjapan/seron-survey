@@ -209,8 +209,10 @@ function renderAdmin() {
         <input id="f-gbpUrl" type="url" placeholder="https://g.page/r/..." value="${esc(state.gbpUrl)}">
         <p class="hint">Googleマップ「レビューを書く」のリンクを貼り付けてください</p>
       </div>
-      <div class="field-wrap" style="display:none">
-        <input id="f-gasUrl" type="url" value="${esc(state.gasUrl)}">
+      <div class="field-wrap">
+        <label class="field-label">Google Apps Script URL</label>
+        <input id="f-gasUrl" type="url" placeholder="https://script.google.com/macros/s/..." value="${esc(state.gasUrl)}">
+        <p class="hint">初回だけ入力してください。次回から自動で入力されます。</p>
       </div>
     </div>
 
