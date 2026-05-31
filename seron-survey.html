@@ -70,6 +70,7 @@ textarea { resize: vertical; min-height: 64px; }
 
 <script>
 const ADMIN_PASSWORD = 'seron2026';
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbw-FAHtp3k77gybTAFX8j9RmzpA1xPO-OT2-OEIyIvG8mLQpZlWQwS9KDz3CI4irbte/exec';
 
 let state = {
   storeName: '',
@@ -167,23 +168,31 @@ function removeQuestion(id) {
 async function generateUrl() {
   saveFields();
   if (!state.storeName || !state.gbpUrl) { alert('店舗名とGBP URLを入力してください'); return; }
-  const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, gasUrl: state.gasUrl, questions: state.questions };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
-  const longUrl = window.location.href.split('?')[0] + '?s=' + encodeURIComponent(encoded);
-  state.generatedUrl = longUrl;
   if (state.gasUrl) localStorage.setItem('seron_gas_url', state.gasUrl);
-  state.shortUrl = null;
   state.shortening = true;
+  state.generatedUrl = '';
   renderAdmin();
+
   try {
-    const res = await fetch('https://api.shrtco.de/v2/shorten?url=' + encodeURIComponent(longUrl));
+    const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, questions: state.questions };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+    const gasUrl = state.gasUrl || localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
+    const res = await fetch(gasUrl + '?action=saveConfig&data=' + encodeURIComponent(encoded));
     if (res.ok) {
-      const json = await res.json();
-      if (json.ok && json.result && json.result.full_short_link) {
-        state.shortUrl = json.result.full_short_link;
+      const result = await res.json();
+      if (result.ok && result.id) {
+        state.generatedUrl = window.location.href.split('?')[0] + '?id=' + result.id;
+        state.shortening = false;
+        renderAdmin();
+        return;
       }
     }
-  } catch(e) {}
+  } catch(e) { console.log('GAS error:', e); }
+
+  // フォールバック: base64 URL
+  const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, questions: state.questions };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+  state.generatedUrl = window.location.href.split('?')[0] + '?s=' + encodeURIComponent(encoded);
   state.shortening = false;
   renderAdmin();
 }
@@ -342,7 +351,7 @@ function fallbackCopy(text) {
 async function submitPreview() {
   if (!state.fromUrl) saveFields();
   const gbpUrl = state.gbpUrl;
-  const gasUrl = state.gasUrl;
+  const gasUrl = state.gasUrl || localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
   const storeName = state.storeName;
   const kansouQ = state.questions.find(q => q.isKansou);
   const kansouText = kansouQ ? (state.previewAnswers[kansouQ.id] || '') : '';
@@ -352,7 +361,7 @@ async function submitPreview() {
       fetch(gasUrl, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ storeName: storeName, fixedAnswers: state.fixedAnswers, answers: state.previewAnswers, questions: state.questions, submittedAt: new Date().toISOString() })
+        body: JSON.stringify({ action: 'saveAnswer', storeName: storeName, fixedAnswers: state.fixedAnswers, answers: state.previewAnswers, questions: state.questions, submittedAt: new Date().toISOString() })
       });
     } catch(e) {}
   }
@@ -448,16 +457,39 @@ function esc(str) {
   if (savedGas) state.gasUrl = savedGas;
 })();
 
-// Check for ?s= param on load
-(function(){
+// Check for ?id= or ?s= param on load
+(async function(){
   const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
   const s = params.get('s');
+
+  if (id) {
+    try {
+      const gasUrl = localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
+      const res = await fetch(gasUrl + '?action=getConfig&id=' + encodeURIComponent(id));
+      if (res.ok) {
+        const result = await res.json();
+        if (result.ok && result.config) {
+          const config = result.config;
+          state.storeName = config.storeName || '';
+          state.gbpUrl = config.gbpUrl || '';
+          state.gasUrl = gasUrl;
+          state.questions = config.questions || state.questions;
+          state.fromUrl = true;
+          document.querySelector('.tab-bar').style.display = 'none';
+          switchTab('preview');
+          return;
+        }
+      }
+    } catch(e) { console.log('fetch error:', e); }
+  }
+
   if (s) {
     try {
       const config = JSON.parse(decodeURIComponent(escape(atob(s))));
       state.storeName = config.storeName || '';
       state.gbpUrl = config.gbpUrl || '';
-      state.gasUrl = config.gasUrl || '';
+      state.gasUrl = localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
       state.questions = config.questions || state.questions;
       state.fromUrl = true;
       document.querySelector('.tab-bar').style.display = 'none';
@@ -465,6 +497,7 @@ function esc(str) {
       return;
     } catch(e) {}
   }
+
   renderPasswordPrompt();
 })();
 </script>
