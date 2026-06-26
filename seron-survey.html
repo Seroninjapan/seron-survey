@@ -3,11 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Seron Survey</title>
-<meta name="description" content="Please share your experience at the restaurant.">
-<meta property="og:title" content="Seron Survey">
-<meta property="og:description" content="Please share your experience at the restaurant.">
-<meta property="og:type" content="website">
+<title>Seron アンケートシステム</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
@@ -89,6 +85,7 @@ let state = {
   copied: false,
   fixedAnswers: { name: '', date: '', gender: '' },
   previewAnswers: {},
+  kansouId: null,
   previewSubmitted: false,
   previewCopiedText: '',
 };
@@ -178,7 +175,8 @@ async function generateUrl() {
   renderAdmin();
 
   try {
-    const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, questions: state.questions };
+    const kansouQ = state.questions.find(q => q.isKansou);
+    const config = { storeName: state.storeName, gbpUrl: state.gbpUrl, questions: state.questions, kansouId: kansouQ ? kansouQ.id : null };
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
     const gasUrl = state.gasUrl || localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
     const res = await fetch(gasUrl + '?action=saveConfig&data=' + encodeURIComponent(encoded));
@@ -357,8 +355,9 @@ async function submitPreview() {
   const gbpUrl = state.gbpUrl;
   const gasUrl = state.gasUrl || localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
   const storeName = state.storeName;
-  const kansouQ = state.questions.find(q => q.isKansou);
-  const kansouText = kansouQ ? (state.previewAnswers[kansouQ.id] || '') : '';
+  // kansouIdを優先、なければisKansouフラグで検索
+  const kansouId = state.kansouId || (state.questions.find(q => q.isKansou) || {}).id;
+  const kansouText = kansouId ? (state.previewAnswers[kansouId] || '') : '';
 
   if (gasUrl) {
     try {
@@ -380,7 +379,11 @@ async function submitPreview() {
 }
 
 function renderPreview() {
-  if (!state.fromUrl) saveFields();
+  if (!state.fromUrl) {
+    saveFields();
+    const kq = state.questions.find(q => q.isKansou);
+    state.kansouId = kq ? kq.id : null;
+  }
   const qs = state.questions;
 
 
@@ -479,6 +482,7 @@ function esc(str) {
           state.gbpUrl = config.gbpUrl || '';
           state.gasUrl = gasUrl;
           state.questions = config.questions || state.questions;
+          state.kansouId = config.kansouId || null;
           state.fromUrl = true;
           document.querySelector('.tab-bar').style.display = 'none';
           switchTab('preview');
@@ -495,6 +499,7 @@ function esc(str) {
       state.gbpUrl = config.gbpUrl || '';
       state.gasUrl = localStorage.getItem('seron_gas_url') || DEFAULT_GAS_URL;
       state.questions = config.questions || state.questions;
+      state.kansouId = config.kansouId || null;
       state.fromUrl = true;
       document.querySelector('.tab-bar').style.display = 'none';
       switchTab('preview');
